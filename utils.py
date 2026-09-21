@@ -1,6 +1,7 @@
 """Проверка данных и безопасный ввод с клавиатуры."""
 
 from math import isfinite
+from typing import Literal, overload
 
 
 def validate_number(value: float, positive: bool = False) -> None:
@@ -26,6 +27,24 @@ def input_text(prompt: str) -> str:
             return value
         except ValueError as error:
             print(error)
+
+
+@overload
+def input_number(
+    prompt: str, integer: Literal[True], positive: bool = False,
+) -> int: ...
+
+
+@overload
+def input_number(
+    prompt: str, integer: Literal[False] = False, positive: bool = False,
+) -> float: ...
+
+
+@overload
+def input_number(
+    prompt: str, integer: bool, positive: bool = False,
+) -> int | float: ...
 
 
 def input_number(
