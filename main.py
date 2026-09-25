@@ -4,11 +4,10 @@ from copy import deepcopy
 from datetime import date
 
 from materials import (
-    add_material, calculate_cost, calculate_remaining, check_availability,
-    filter_materials, find_materials, get_material, get_statistics,
-    sort_materials,
+    Material, add_material, filter_materials, find_materials, get_material,
+    get_statistics, sort_materials,
 )
-from operations import cancel_operation, create_operation
+from operations import Operation, cancel_operation, create_operation
 from storage import DATA_PATH, load_data, save_data
 from utils import input_choice, input_number, input_text
 
@@ -29,54 +28,49 @@ MENU = """
 """
 
 
-def show_materials(materials: list[dict]) -> None:
+def show_materials(materials: list[Material]) -> None:
     """Выводит материалы с идентификаторами и остатками."""
     if not materials:
         print("Материалы не найдены.")
     for material in materials:
-        print(
-            f"#{material['id']} {material['name']} | "
-            f"{material['category']} | {material['price']:.2f} руб. | "
-            f"{material['quantity']:g} {material['unit']}"
-        )
+        print(material)
 
 
-def select_material(materials: list[dict]) -> dict:
+def select_material(materials: list[Material]) -> Material:
     """Запрашивает идентификатор существующего материала."""
     material_id = input_number("ID материала: ", integer=True, positive=True)
     return get_material(materials, material_id)
 
 
-def show_calculation(materials: list[dict]) -> None:
+def show_calculation(materials: list[Material]) -> None:
     """Выполняет исходный сценарий ПР1 для выбранного материала."""
     material = select_material(materials)
     required = input_number("Необходимое количество: ")
-    stock, price = material['quantity'], material['price']
-    print(f"Материал: {material['name']}")
-    print(f"Стоимость: {calculate_cost(price, required):.2f} руб.")
-    print(check_availability(stock, required))
-    if stock >= required:
-        remaining = calculate_remaining(stock, required)
+    print(f"Материал: {material.name}")
+    print(f"Стоимость: {material.calculate_cost(required):.2f} руб.")
+    status = (
+        "Материала достаточно" if material.is_available(required)
+        else "Материала недостаточно"
+    )
+    print(status)
+    if material.is_available(required):
+        remaining = material.remaining_after(required)
         print(f"Остаток после использования: {remaining:g}")
     else:
-        missing = calculate_remaining(required, stock)
-        print(f"Необходимо докупить: {missing:g} {material['unit']}")
-        print(f"Стоимость недостающего: {calculate_cost(price, missing):.2f}")
+        missing = required - material.quantity
+        print(f"Необходимо докупить: {missing:g} {material.unit}")
+        print(
+            f"Стоимость недостающего: "
+            f"{material.calculate_cost(missing):.2f} руб."
+        )
 
 
-def show_operations(operations: list[dict]) -> None:
+def show_operations(operations: list[Operation]) -> None:
     """Показывает операции, включая отмененные."""
     if not operations:
         print("Операций пока нет.")
     for operation in operations:
-        kind = "Поступление" if operation['kind'] == 'receipt' else "Расход"
-        status = "отменена" if operation['cancelled'] else "действует"
-        print(
-            f"#{operation['id']} {operation['date']} | {kind} | "
-            f"материал #{operation['material_id']} | "
-            f"{operation['quantity']:g} | {status} | "
-            f"{operation['note']}"
-        )
+        print(operation)
 
 
 def handle_action(choice: str, data: dict) -> None:
@@ -108,7 +102,7 @@ def handle_action(choice: str, data: dict) -> None:
         quantity = input_number("Количество: ", positive=True)
         note = input("Объект ремонта или примечание (необязательно): ").strip()
         create_operation(
-            materials, operations, material['id'],
+            materials, operations, material.id,
             'receipt' if choice == '7' else 'expense', quantity, note,
         )
     elif choice == '9':

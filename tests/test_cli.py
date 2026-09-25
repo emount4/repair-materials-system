@@ -16,7 +16,7 @@ def test_all_menu_actions_and_reload(tmp_path, monkeypatch, capsys):
         '11', '0',
     ])
     monkeypatch.setattr('builtins.input', lambda prompt: next(answers))
-    path = tmp_path / 'inventory.json'
+    path = tmp_path / 'data'
     main(path)
     output = capsys.readouterr().out
     assert 'Необходимо докупить: 2' in output
@@ -25,8 +25,9 @@ def test_all_menu_actions_and_reload(tmp_path, monkeypatch, capsys):
     assert 'Недостаточно материала' in output
     assert 'Стоимость запасов: 7500.00' in output
     data = load_data(path)
-    assert data['materials'][0]['quantity'] == 15
-    assert data['operations'][1]['cancelled'] is True
+    assert data['materials'][0].quantity == 15
+    assert data['operations'][1].cancelled is True
+    assert data['operations'][0].material is data['materials'][0]
     answers = iter(['1', '0'])
     main(path)
     assert '15 л' in capsys.readouterr().out
@@ -39,11 +40,13 @@ def test_numeric_input_retries(monkeypatch):
 
 
 def test_bad_file_stops_safely(tmp_path, capsys):
-    path = tmp_path / 'inventory.json'
-    path.write_text('{broken', encoding='utf-8')
+    path = tmp_path / 'data'
+    path.mkdir()
+    materials_path = path / 'materials.json'
+    materials_path.write_text('{broken', encoding='utf-8')
     main(path)
     assert 'Не удалось загрузить данные' in capsys.readouterr().out
-    assert path.read_text(encoding='utf-8') == '{broken'
+    assert materials_path.read_text(encoding='utf-8') == '{broken'
 
 
 def test_save_failure_rolls_back_memory(tmp_path, monkeypatch, capsys):
@@ -54,7 +57,7 @@ def test_save_failure_rolls_back_memory(tmp_path, monkeypatch, capsys):
         raise PermissionError('Нет доступа')
 
     monkeypatch.setattr('main.save_data', deny_save)
-    main(tmp_path / 'inventory.json')
+    main(tmp_path / 'data')
     output = capsys.readouterr().out
     assert 'Изменения не применены' in output
     assert 'Материалы не найдены' in output
