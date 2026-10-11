@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if operation.kind == "receipt" %}Поступление{% else %}Расход{% endif %}
+    #{{ operation.id }} — Учет материалов ИП
+{% endblock %}
+
+{% block content %}
+<p class="section-label mb-1">Карточка операции</p>
+<h1 class="h2 mb-3">
+    {% if operation.kind == "receipt" %}Поступление{% else %}Расход{% endif %}
+    #{{ operation.id }}
+</h1>
+
+<article class="detail-panel mb-3">
+    <div class="detail-panel__header">
+        <span class="text-secondary">{{ operation.date }}</span>
+        {% include "operations_web/includes/operation_status.html" %}
+    </div>
+    <dl class="row mb-0">
+        <dt class="col-sm-4">Материал</dt>
+        <dd class="col-sm-8">
+            <a href="{% url 'materials_web:material_detail' operation.material.id %}">
+                {{ operation.material.name|default:"Без названия" }}
+            </a>
+        </dd>
+        <dt class="col-sm-4">Количество</dt>
+        <dd class="col-sm-8">
+            {{ operation.quantity|floatformat:"-2" }}
+            {{ operation.material.unit }}
+        </dd>
+        <dt class="col-sm-4">Примечание</dt>
+        <dd class="col-sm-8">{{ operation.note|default:"Без примечания" }}</dd>
+    </dl>
+</article>
+
+<a class="btn btn-outline-dark" href="{% url 'operations_web:operations' %}">
+    <i class="bi bi-arrow-left me-2"></i>К истории операций
+</a>
+{% endblock %}

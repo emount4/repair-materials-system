@@ -1,0 +1,25 @@
+<tr class="material-row">
+    <td class="text-secondary">#{{ material.id }}</td>
+    <td>
+        <a
+            class="fw-semibold link-dark"
+            href="{% url 'materials_web:material_detail' material.id %}"
+        >
+            {{ material.name|default:"Без названия" }}
+        </a>
+    </td>
+    <td>{{ material.category|default:"Без категории" }}</td>
+    <td>{{ material.quantity|floatformat:"-2" }} {{ material.unit }}</td>
+    <td>{{ material.price|floatformat:2 }} руб.</td>
+    <td>
+        {% if material.quantity > 0 %}
+            <span class="badge text-bg-success stock-status">
+                в наличии
+            </span>
+        {% else %}
+            <span class="badge text-bg-danger stock-status">
+                закончился
+            </span>
+        {% endif %}
+    </td>
+</tr>

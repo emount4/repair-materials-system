@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Материал не найден{% endblock %}
+
+{% block content %}
+<h1 class="h2 text-danger">Материал не найден</h1>
+<p>Позиции с указанным идентификатором нет в JSON-хранилище.</p>
+<a class="btn btn-outline-dark" href="{% url 'materials_web:materials' %}">
+    <i class="bi bi-arrow-left me-2"></i>К списку материалов
+</a>
+{% endblock %}

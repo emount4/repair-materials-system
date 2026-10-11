@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{{ material.name }} — Учет материалов ИП{% endblock %}
+
+{% block content %}
+<p class="section-label mb-1">Карточка материала</p>
+<h1 class="h2 mb-3">{{ material.name|default:"Без названия" }}</h1>
+
+<article class="detail-panel mb-3">
+    <div class="detail-panel__header">
+        <span class="text-secondary">Материал #{{ material.id }}</span>
+        {% if material.quantity > 0 %}
+            <span class="badge text-bg-success stock-status">
+                в наличии
+            </span>
+        {% else %}
+            <span class="badge text-bg-danger stock-status">
+                закончился
+            </span>
+        {% endif %}
+    </div>
+    <dl class="row mb-0">
+        <dt class="col-sm-4">Категория</dt>
+        <dd class="col-sm-8">{{ material.category|default:"Без категории" }}</dd>
+        <dt class="col-sm-4">Цена за единицу</dt>
+        <dd class="col-sm-8">{{ material.price|floatformat:2 }} руб.</dd>
+        <dt class="col-sm-4">Остаток</dt>
+        <dd class="col-sm-8">
+            {{ material.quantity|floatformat:"-2" }} {{ material.unit }}
+        </dd>
+        <dt class="col-sm-4">Стоимость остатка</dt>
+        <dd class="col-sm-8">{{ total_cost|floatformat:2 }} руб.</dd>
+    </dl>
+</article>
+
+<a class="btn btn-outline-dark" href="{% url 'materials_web:materials' %}">
+    <i class="bi bi-arrow-left me-2"></i>К списку материалов
+</a>
+{% endblock %}

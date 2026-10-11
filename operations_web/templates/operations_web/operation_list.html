@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Операции — Учет материалов ИП{% endblock %}
+
+{% block content %}
+<header class="page-heading">
+    <div>
+        <p class="section-label mb-1">Журнал движения</p>
+        <h1 class="h2 mb-0">Операции</h1>
+    </div>
+    <span class="badge text-bg-dark">
+        Записей: {{ operations|length }}
+    </span>
+</header>
+
+<div class="table-responsive data-surface">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Вид</th>
+                <th>Материал</th>
+                <th>Количество</th>
+                <th>Дата</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for operation in operations %}
+                <tr>
+                    <td class="text-secondary">#{{ operation.id }}</td>
+                    <td>
+                        <a
+                            class="fw-semibold link-dark"
+                            href="{% url 'operations_web:operation_detail' operation.id %}"
+                        >
+                            {% if operation.kind == "receipt" %}
+                                Поступление
+                            {% else %}
+                                Расход
+                            {% endif %}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'materials_web:material_detail' operation.material.id %}">
+                            {{ operation.material.name|default:"Без названия" }}
+                        </a>
+                    </td>
+                    <td>
+                        {{ operation.quantity|floatformat:"-2" }}
+                        {{ operation.material.unit }}
+                    </td>
+                    <td>{{ operation.date }}</td>
+                    <td>
+                        {% include "operations_web/includes/operation_status.html" %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        Операций пока нет.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

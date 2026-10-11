@@ -1,0 +1,24 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg bg-dark" data-bs-theme="dark">
+    <div class="container page-shell">
+        <a class="navbar-brand fw-semibold" href="{% url 'homepage:index' %}">
+            <img
+                class="brand-logo"
+                src="{% static 'homepage/img/logo.svg' %}"
+                alt=""
+            >
+            Материалы ИП
+        </a>
+        <div class="navbar-nav flex-row gap-2 gap-md-3">
+            <a class="nav-link" href="{% url 'homepage:index' %}">
+                Главная
+            </a>
+            <a class="nav-link" href="{% url 'materials_web:materials' %}">
+                Материалы
+            </a>
+            <a class="nav-link" href="{% url 'operations_web:operations' %}">
+                Операции
+            </a>
+        </div>
+    </div>
+</nav>

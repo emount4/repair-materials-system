@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Главная — Учет материалов ИП{% endblock %}
+
+{% block content %}
+<section class="intro mb-4">
+    <p class="section-label mb-2">Складской учет для ремонтных работ</p>
+    <h1 class="display-5 fw-bold">Система учета материалов ИП</h1>
+    <p class="lead col-lg-9">
+        Единый обзор складских остатков и движения материалов из
+        JSON-хранилища индивидуального проекта.
+    </p>
+</section>
+
+<section class="metrics-grid mb-4" aria-label="Сводка">
+    <article class="metric">
+        <div class="text-secondary small">Материалов</div>
+        <div class="fs-3 fw-bold">{{ statistics.count }}</div>
+    </article>
+    <article class="metric">
+        <div class="text-secondary small">Категорий</div>
+        <div class="fs-3 fw-bold">{{ statistics.categories }}</div>
+    </article>
+    <article class="metric">
+        <div class="text-secondary small">Нет в наличии</div>
+        <div class="fs-3 fw-bold">{{ statistics.out_of_stock }}</div>
+    </article>
+    <article class="metric">
+        <div class="text-secondary small">Стоимость запасов</div>
+        <div class="fs-5 fw-bold">
+            {{ statistics.total_cost|floatformat:2 }} руб.
+        </div>
+    </article>
+</section>
+
+<section class="d-flex flex-wrap gap-2">
+    <a class="btn btn-success" href="{% url 'materials_web:materials' %}">
+        <i class="bi bi-boxes me-2"></i>Открыть материалы
+    </a>
+    <a class="btn btn-outline-dark" href="{% url 'operations_web:operations' %}">
+        <i class="bi bi-arrow-left-right me-2"></i>
+        Открыть операции ({{ operations_count }})
+    </a>
+</section>
+{% endblock %}

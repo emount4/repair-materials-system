@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Операция не найдена{% endblock %}
+
+{% block content %}
+<h1 class="h2 text-danger">Операция не найдена</h1>
+<p>Записи с указанным идентификатором нет в JSON-хранилище.</p>
+<a class="btn btn-outline-dark" href="{% url 'operations_web:operations' %}">
+    <i class="bi bi-arrow-left me-2"></i>К истории операций
+</a>
+{% endblock %}
