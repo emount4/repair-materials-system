@@ -28,7 +28,7 @@ class Operation:
             date.fromisoformat(operation_date)
         except (TypeError, ValueError) as error:
             raise ValueError("Некорректная дата операции") from error
-        if not isinstance(note, str) or type(cancelled) is not bool:
+        if not isinstance(note, str) or not isinstance(cancelled, bool):
             raise ValueError("Некорректные поля операции")
         self.id = operation_id
         self.material = material
@@ -126,7 +126,7 @@ def create_operation(
 
 
 def cancel_operation(
-    materials: list[Material], operations: list[Operation], operation_id: int,
+    operations: list[Operation], operation_id: int,
 ) -> None:
     """Найти операцию и отменить ее методом объекта."""
     operation = next(

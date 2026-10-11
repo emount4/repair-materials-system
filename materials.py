@@ -29,7 +29,8 @@ class Material:
     @staticmethod
     def validate_id(value: int) -> None:
         """Проверить идентификатор материала."""
-        if type(value) is not int or value <= 0:
+        if (isinstance(value, bool)
+                or not isinstance(value, int) or value <= 0):
             raise ValueError("ID должен быть положительным целым числом")
 
     @classmethod

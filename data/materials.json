@@ -3,8 +3,16 @@
     "id": 1,
     "name": "jhdsh",
     "price": 342.0,
-    "quantity": 21.0,
+    "quantity": 20.0,
     "unit": "32",
     "category": "few"
+  },
+  {
+    "id": 2,
+    "name": "Краска",
+    "price": 100.0,
+    "quantity": 10.0,
+    "unit": "шт",
+    "category": "Краска"
   }
 ]

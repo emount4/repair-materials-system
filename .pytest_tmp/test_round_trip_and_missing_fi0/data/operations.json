@@ -1,0 +1,11 @@
+[
+  {
+    "id": 1,
+    "material_id": 1,
+    "kind": "expense",
+    "quantity": 1,
+    "date": "2026-09-28",
+    "note": "",
+    "cancelled": false
+  }
+]

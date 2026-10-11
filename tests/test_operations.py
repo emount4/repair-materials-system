@@ -31,10 +31,10 @@ def test_receipt_expense_and_cancellation(inventory):
     assert expense.material is materials[0]
     assert 'Краска' in str(expense)
     assert materials[0].quantity == 12
-    cancel_operation(materials, operations, 2)
+    cancel_operation(operations, 2)
     assert materials[0].quantity == 15
     assert operations[1].cancelled is True
-    cancel_operation(materials, operations, 1)
+    cancel_operation(operations, 1)
     assert materials[0].quantity == 10
     assert len(operations) == 2
 
@@ -53,15 +53,15 @@ def test_spent_receipt_cannot_be_cancelled(inventory):
     create_operation(materials, operations, 1, 'expense', 13)
     before = snapshot(inventory)
     with pytest.raises(ValueError, match='уже потрачены'):
-        cancel_operation(materials, operations, 1)
+        cancel_operation(operations, 1)
     assert snapshot(inventory) == before
 
 
 def test_repeated_cancellation_is_rejected(inventory):
     create_operation(*inventory, 1, 'expense', 1)
-    cancel_operation(*inventory, 1)
+    cancel_operation(inventory[1], 1)
     with pytest.raises(ValueError, match='уже отменена'):
-        cancel_operation(*inventory, 1)
+        cancel_operation(inventory[1], 1)
     assert inventory[0][0].quantity == 10
 
 

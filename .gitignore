@@ -5,3 +5,4 @@ __pycache__/
 data/*.tmp
 .vscode
 .mypy_cache
+db.sqlite3

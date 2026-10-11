@@ -111,7 +111,7 @@ def handle_action(choice: str, data: dict) -> None:
         operation_id = input_number(
             "ID операции: ", integer=True, positive=True,
         )
-        cancel_operation(materials, operations, operation_id)
+        cancel_operation(operations, operation_id)
     elif choice == '11':
         statistics = get_statistics(materials)
         print(f"Видов материалов: {statistics['count']}")

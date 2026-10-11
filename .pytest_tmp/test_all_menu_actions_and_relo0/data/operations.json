@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "material_id": 1,
+    "kind": "receipt",
+    "quantity": 5.0,
+    "date": "2026-09-28",
+    "note": "Кухня",
+    "cancelled": false
+  },
+  {
+    "id": 2,
+    "material_id": 1,
+    "kind": "expense",
+    "quantity": 3.0,
+    "date": "2026-09-28",
+    "note": "",
+    "cancelled": true
+  }
+]

@@ -6,7 +6,8 @@ from typing import Literal, overload
 
 def validate_number(value: float, positive: bool = False) -> None:
     """Отклоняет нечисловые, бесконечные и недопустимые значения."""
-    if (type(value) not in (int, float) or not isfinite(value)
+    if (isinstance(value, bool) or not isinstance(value, (int, float))
+            or not isfinite(value)
             or value < 0 or (positive and value == 0)):
         sign = "положительное" if positive else "неотрицательное"
         raise ValueError(f"Требуется конечное {sign} число")
