@@ -9,7 +9,7 @@
         </a>
     </td>
     <td>{{ material.category|default:"Без категории" }}</td>
-    <td>{{ material.quantity|floatformat:"-2" }} {{ material.unit }}</td>
+    <td>{{ material.quantity }} {{ material.unit }}</td>
     <td>{{ material.price|floatformat:2 }} руб.</td>
     <td>
         {% if material.quantity > 0 %}

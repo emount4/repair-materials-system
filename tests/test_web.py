@@ -3,6 +3,7 @@
 import os
 
 import django
+import pytest
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'inventory_web.settings')
@@ -12,6 +13,9 @@ from django.contrib.staticfiles import finders  # noqa: E402
 from django.template.loader import get_template  # noqa: E402
 from django.test import Client  # noqa: E402
 from django.urls import reverse  # noqa: E402
+
+from materials import Material  # noqa: E402
+from operations import Operation  # noqa: E402
 
 
 def test_main_pages_are_available():
@@ -80,3 +84,26 @@ def test_operation_detail_and_missing_operation():
     response = client.get('/operations/999/')
     assert response.status_code == 404
     assert 'Операция не найдена' in response.content.decode()
+
+
+@pytest.mark.parametrize('quantity, expected', [
+    (0.001, '0,001'),
+    (0.00001, '0,00001'),
+    (1.23456789, '1,23456789'),
+])
+def test_web_quantities_preserve_fractional_precision(
+    monkeypatch, quantity, expected,
+):
+    material = Material(1, 'Краска', 100, quantity, 'кг', 'Отделка')
+    operation = Operation(1, material, 'receipt', quantity, '2026-10-16')
+    data = {'materials': [material], 'operations': [operation]}
+    for module in ('materials_web.views', 'operations_web.views'):
+        monkeypatch.setattr(f'{module}.load_data', lambda: data)
+
+    client = Client()
+    for url in (
+        '/materials/', '/materials/1/', '/operations/', '/operations/1/',
+    ):
+        response = client.get(url)
+        assert response.status_code == 200
+        assert expected in response.content.decode(), url
