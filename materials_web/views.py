@@ -3,6 +3,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 
+from materials import find_material_by_id
 from storage import load_data
 
 
@@ -14,13 +15,8 @@ def materials(request) -> HttpResponse:
 
 def material_detail(request, material_id: int) -> HttpResponse:
     """Показать карточку материала или вернуть HTTP 404."""
-    material = next(
-        (
-            item for item in load_data()['materials']
-            if item.id == material_id
-        ),
-        None,
-    )
+    materials_list = load_data()['materials']
+    material = find_material_by_id(materials_list, material_id)
     if material is None:
         return render(
             request,
