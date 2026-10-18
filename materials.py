@@ -137,11 +137,21 @@ def add_material(
     return material
 
 
-def get_material(materials: list[Material], material_id: int) -> Material:
-    """Найти материал по ID или сообщить об отсутствии."""
+def find_material_by_id(
+    materials: list[Material], material_id: int,
+) -> Material | None:
+    """Найти объект материала по ID или вернуть None."""
     for material in materials:
         if material.id == material_id:
             return material
+    return None
+
+
+def get_material(materials: list[Material], material_id: int) -> Material:
+    """Найти материал по ID или сообщить об отсутствии."""
+    material = find_material_by_id(materials, material_id)
+    if material is not None:
+        return material
     raise ValueError("Материал с таким ID не найден")
 
 

@@ -5,6 +5,7 @@ from html import escape
 from django.http import HttpResponse
 
 from homepage.views import page
+from operations import find_operation_by_id
 from storage import load_data
 
 
@@ -70,13 +71,8 @@ def operations(request) -> HttpResponse:
 
 def operation_detail(request, operation_id: int) -> HttpResponse:
     """Показать карточку операции или вернуть HTTP 404."""
-    operation = next(
-        (
-            item for item in load_data()['operations']
-            if item.id == operation_id
-        ),
-        None,
-    )
+    operations_list = load_data()['operations']
+    operation = find_operation_by_id(operations_list, operation_id)
     if operation is None:
         content = """
 <h1 class="h2 text-danger">Операция не найдена</h1>

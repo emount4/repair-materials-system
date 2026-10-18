@@ -54,6 +54,16 @@ def page(title: str, content: str) -> str:
 </html>"""
 
 
+def page_not_found(request, exception) -> HttpResponse:
+    """Показать общую страницу 404 для неизвестного адреса или Http404."""
+    content = """
+<h1 class="h2 text-danger">404 - страница не найдена</h1>
+<p>Проверьте адрес или вернитесь на главную.</p>
+<a class="btn btn-outline-dark" href="/">На главную</a>
+"""
+    return HttpResponse(page('404 - страница не найдена', content), status=404)
+
+
 def index(request) -> HttpResponse:
     """Показать назначение проекта, статистику и основные разделы."""
     data = load_data()

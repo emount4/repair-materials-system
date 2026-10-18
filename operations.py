@@ -102,6 +102,16 @@ def changed_quantity(current: float, change: float) -> float:
     return result
 
 
+def find_operation_by_id(
+    operations: list[Operation], operation_id: int,
+) -> Operation | None:
+    """Найти объект операции по ID или вернуть None."""
+    for operation in operations:
+        if operation.id == operation_id:
+            return operation
+    return None
+
+
 def create_operation(
     materials: list[Material], operations: list[Operation], material_id: int,
     kind: str, quantity: float, note: str = '',
@@ -129,9 +139,7 @@ def cancel_operation(
     operations: list[Operation], operation_id: int,
 ) -> None:
     """Найти операцию и отменить ее методом объекта."""
-    operation = next(
-        (item for item in operations if item.id == operation_id), None,
-    )
+    operation = find_operation_by_id(operations, operation_id)
     if operation is None:
         raise ValueError("Операция с таким ID не найдена")
     operation.cancel()
