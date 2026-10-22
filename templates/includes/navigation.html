@@ -9,7 +9,7 @@
             >
             Материалы ИП
         </a>
-        <div class="navbar-nav flex-row gap-2 gap-md-3">
+        <div class="navbar-nav flex-row flex-wrap gap-2 gap-md-3">
             <a class="nav-link" href="{% url 'homepage:index' %}">
                 Главная
             </a>
@@ -18,6 +18,12 @@
             </a>
             <a class="nav-link" href="{% url 'operations_web:operations' %}">
                 Операции
+            </a>
+            <a class="nav-link" href="{% url 'materials_web:available' %}">
+                Подбор
+            </a>
+            <a class="nav-link" href="{% url 'homepage:statistics' %}">
+                Статистика
             </a>
         </div>
     </div>

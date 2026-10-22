@@ -20,14 +20,14 @@
     <dl class="row mb-0">
         <dt class="col-sm-4">Материал</dt>
         <dd class="col-sm-8">
-            <a href="{% url 'materials_web:material_detail' operation.material.id %}">
-                {{ operation.material.name|default:"Без названия" }}
+            <a href="{% url 'materials_web:material_detail' operation.material_id %}">
+                {{ operation.material_name|default:"Без названия" }}
             </a>
         </dd>
         <dt class="col-sm-4">Количество</dt>
         <dd class="col-sm-8">
             {{ operation.quantity }}
-            {{ operation.material.unit }}
+            {{ operation.material_unit }}
         </dd>
         <dt class="col-sm-4">Примечание</dt>
         <dd class="col-sm-8">{{ operation.note|default:"Без примечания" }}</dd>

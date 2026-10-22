@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Статистика — Учет материалов ИП{% endblock %}
+{% block content %}
+<header class="page-heading">
+    <div><p class="section-label mb-1">Склад и движение</p><h1 class="h2 mb-0">Статистика</h1></div>
+</header>
+<section class="metrics-grid mb-4" aria-label="Сводка операций">
+    <article class="metric"><div class="text-secondary small">Всего операций</div><div class="fs-3 fw-bold">{{ summary.operations_count }}</div></article>
+    <article class="metric"><div class="text-secondary small">Действующих</div><div class="fs-3 fw-bold">{{ summary.active_count }}</div></article>
+    <article class="metric"><div class="text-secondary small">Отменённых</div><div class="fs-3 fw-bold">{{ summary.cancelled_count }}</div></article>
+    <article class="metric"><div class="text-secondary small">Стоимость запасов</div><div class="fs-5 fw-bold">{{ statistics.total_cost|floatformat:2 }} руб.</div></article>
+</section>
+<dl class="row mb-4">
+    <dt class="col-sm-5">Поступления по текущим ценам</dt><dd class="col-sm-7">{{ summary.receipt_value|floatformat:2 }} руб.</dd>
+    <dt class="col-sm-5">Расходы по текущим ценам</dt><dd class="col-sm-7">{{ summary.expense_value|floatformat:2 }} руб.</dd>
+</dl>
+<section class="mb-4">
+    <h2 class="h4">Запасы по категориям</h2>
+    <div class="table-responsive data-surface">
+        <table class="table mb-0">
+            <thead class="table-light"><tr><th>Категория</th><th>Позиций</th><th>Стоимость запасов</th><th>Цена мин.</th><th>Цена макс.</th><th>Средняя цена</th></tr></thead>
+            <tbody>
+                {% for category in categories %}
+                    <tr><td>{{ category.category }}</td><td>{{ category.materials_count }}</td><td>{{ category.stock_value|floatformat:2 }} руб.</td><td>{{ category.min_price|floatformat:2 }}</td><td>{{ category.max_price|floatformat:2 }}</td><td>{{ category.average_price|floatformat:2 }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="6" class="empty-state">Категорий пока нет.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<section class="mb-4">
+    <h2 class="h4">Движение по материалам</h2>
+    <div class="table-responsive data-surface">
+        <table class="table mb-0">
+            <thead class="table-light"><tr><th>Материал</th><th>Операций</th><th>Поступило</th><th>Израсходовано</th><th>Последняя дата</th></tr></thead>
+            <tbody>
+                {% for item in activity %}
+                    <tr><td><a href="{% url 'materials_web:material_detail' item.id %}">{{ item.name }}</a></td><td>{{ item.operations_count }}</td><td>{{ item.received }} {{ item.unit }}</td><td>{{ item.spent }} {{ item.unit }}</td><td>{{ item.last_date|default:"Нет операций" }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="5" class="empty-state">Материалов пока нет.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<section>
+    <h2 class="h4">Активность материалов</h2>
+    <form method="get" class="filter-bar mb-3">
+        <div>
+            <label class="form-label" for="activity-threshold">Действующих операций больше</label>
+            <input class="form-control" id="activity-threshold" name="threshold" value="{{ threshold }}" type="number" min="0" max="1000000000" step="1" required>
+        </div>
+        <button class="btn btn-success" type="submit"><i class="bi bi-funnel me-2"></i>Отобрать</button>
+    </form>
+    {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+    <div class="table-responsive data-surface">
+        <table class="table mb-0">
+            <thead class="table-light"><tr><th>Материал</th><th>Операций</th></tr></thead>
+            <tbody>
+                {% for item in frequent %}
+                    <tr><td><a href="{% url 'materials_web:material_detail' item.id %}">{{ item.name }}</a></td><td>{{ item.operations_count }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="2" class="empty-state">Нет материалов с такой активностью.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

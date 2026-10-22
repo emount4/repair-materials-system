@@ -1,4 +1,4 @@
-"""Проверки Django-маршрутов, шаблонов и веб-страниц ПР6."""
+"""Regression tests for templates and pages backed by isolated SQLite data."""
 
 import os
 from html.parser import HTMLParser
@@ -19,16 +19,28 @@ from django.urls import resolve, reverse  # noqa: E402
 from homepage.views import page_not_found  # noqa: E402
 from materials import Material  # noqa: E402
 from operations import Operation  # noqa: E402
+from db import database  # noqa: E402
+from db.import_json import import_json  # noqa: E402
+from storage import save_data  # noqa: E402
 
 
 @pytest.fixture
-def web_data(monkeypatch):
+def store_web_data(tmp_path, monkeypatch):
+    monkeypatch.setattr(database, 'DB_PATH', tmp_path / 'web.sqlite')
+
+    def store(data):
+        save_data(data, tmp_path / 'json')
+        import_json(tmp_path / 'json', replace=True)
+
+    return store
+
+
+@pytest.fixture(autouse=True)
+def web_data(store_web_data):
     material = Material(1, 'Краска', 100, 10, 'л', 'Отделка')
     operation = Operation(1, material, 'expense', 2, '2026-10-18')
     data = {'materials': [material], 'operations': [operation]}
-    for module in ('homepage.views', 'materials_web.views',
-                   'operations_web.views'):
-        monkeypatch.setattr(f'{module}.load_data', lambda: data)
+    store_web_data(data)
     return data
 
 
@@ -106,13 +118,12 @@ def test_operation_detail_and_missing_operation(web_data):
     (1.23456789, '1,23456789'),
 ])
 def test_web_quantities_preserve_fractional_precision(
-    monkeypatch, quantity, expected,
+    store_web_data, quantity, expected,
 ):
     material = Material(1, 'Краска', 100, quantity, 'кг', 'Отделка')
     operation = Operation(1, material, 'receipt', quantity, '2026-10-16')
     data = {'materials': [material], 'operations': [operation]}
-    for module in ('materials_web.views', 'operations_web.views'):
-        monkeypatch.setattr(f'{module}.load_data', lambda: data)
+    store_web_data(data)
 
     client = Client()
     for url in (
@@ -151,7 +162,7 @@ def test_http404_from_view_uses_global_handler(web_data, monkeypatch):
     def missing(*args):
         raise Http404('private lookup details')
 
-    monkeypatch.setattr('materials_web.views.find_material_by_id', missing)
+    monkeypatch.setattr('materials_web.views.fetch_one', missing)
     response = Client().get('/materials/1/')
     content = response.content.decode()
     assert response.status_code == 404
@@ -175,21 +186,23 @@ def test_missing_objects_keep_specific_404(web_data, debug, url, message):
     ('/materials/', 'Материалы не найдены.'),
     ('/operations/', 'Операций пока нет.'),
 ])
-def test_empty_lists(web_data, url, message):
+def test_empty_lists(web_data, store_web_data, url, message):
     web_data['materials'].clear()
     web_data['operations'].clear()
+    store_web_data(web_data)
     response = Client().get(url)
     assert response.status_code == 200
     assert message in response.content.decode()
 
 
-def test_objects_and_text_are_displayed_safely(web_data):
+def test_objects_and_text_are_displayed_safely(web_data, store_web_data):
     material = web_data['materials'][0]
     material.name = '<b>Краска</b>'
     material.quantity = 0
     operation = web_data['operations'][0]
     operation.cancelled = True
     operation.note = '<script>alert(1)</script>'
+    store_web_data(web_data)
     client = Client()
     for url in ('/materials/', '/materials/1/'):
         content = client.get(url).content.decode()
@@ -240,3 +253,116 @@ def test_named_routes_and_navigation(web_data):
         assert {'/', '/materials/', '/operations/'} <= parser.hrefs
         for href in parser.hrefs:
             assert client.get(href).status_code == 200
+
+
+def test_sql_search_pages_and_statistics(web_data, store_web_data):
+    paint = web_data['materials'][0]
+    brush = Material(2, 'Кисть', 50, 3, 'шт', 'Инструменты')
+    web_data['materials'].append(brush)
+    web_data['operations'].append(
+        Operation(2, brush, 'expense', 1, '2026-10-18', '', True),
+    )
+    store_web_data(web_data)
+    client = Client()
+    response = client.get('/materials/', {'q': paint.name, 'quantity': '4'})
+    assert response.status_code == 200
+    assert 'Краска' in response.content.decode()
+    assert 'Кисть' not in response.content.decode()
+    response = client.get('/materials/available/',
+                          {'date': '2026-10-18', 'quantity': '1'})
+    assert response.status_code == 200
+    assert 'Кисть' in response.content.decode()
+    assert 'Краска' not in response.content.decode()
+    response = client.get('/operations/', {'state': 'active'})
+    assert 'Краска' in response.content.decode()
+    assert 'Кисть' not in response.content.decode()
+    response = client.get('/operations/', {
+        'state': 'cancelled', 'kind': 'expense', 'date': '2026-10-18',
+    })
+    assert 'Кисть' in response.content.decode()
+    assert 'Краска' not in response.content.decode()
+    assert 'Отменённые' in response.content.decode()
+    response = client.get('/statistics/', {'threshold': '0'})
+    assert response.status_code == 200
+    assert 'Отделка' in response.content.decode()
+    assert 'Инструменты' in response.content.decode()
+    assert 'Нет операций' in response.content.decode()
+    response = client.get('/statistics/', {'threshold': '5'})
+    assert 'Нет материалов с такой активностью.' in response.content.decode()
+
+
+@pytest.mark.parametrize('url, parameters', [
+    ('/materials/', {'quantity': '-1'}),
+    ('/materials/', {'quantity': 'abc'}),
+    ('/materials/', {'quantity': 'nan'}),
+    ('/materials/', {'quantity': '1e9999'}),
+    ('/materials/available/', {'date': '2026-02-30'}),
+    ('/materials/available/', {'date': '20261018'}),
+    ('/materials/available/', {'quantity': '-5'}),
+    ('/operations/', {'kind': 'unknown'}),
+    ('/operations/', {'state': 'unknown'}),
+    ('/operations/', {'date': 'not a date'}),
+    ('/statistics/', {'threshold': '-1'}),
+    ('/statistics/', {'threshold': 'abc'}),
+    ('/statistics/', {'threshold': '99999999999999999999999'}),
+])
+def test_invalid_search_parameters_are_not_server_errors(url, parameters):
+    response = Client().get(url, parameters)
+    assert response.status_code == 400
+    assert 'role="alert"' in response.content.decode()
+
+
+def test_search_handles_empty_results_and_literal_wildcards():
+    client = Client()
+    for parameters in ({'q': 'missing'}, {'q': '%'}, {'q': '_'},
+                       {'q': "' OR 1=1 --"}, {'quantity': '1000000'}):
+        response = client.get('/materials/', parameters)
+        assert response.status_code == 200
+        assert 'Материалы не найдены.' in response.content.decode()
+
+
+def test_pages_read_sqlite_not_json(monkeypatch):
+    def reject(*args, **kwargs):
+        raise AssertionError('Web requests must not load JSON')
+
+    monkeypatch.setattr('storage.load_data', reject)
+    for url in ('/', '/materials/', '/materials/1/', '/operations/',
+                '/operations/1/', '/materials/available/', '/statistics/'):
+        assert Client().get(url).status_code == 200
+
+
+def test_all_queries_are_used_by_web_pages(monkeypatch):
+    from db import queries
+
+    used = set()
+    for module in ('homepage.views', 'materials_web.views',
+                   'operations_web.views'):
+        for method in ('fetch_one', 'fetch_all'):
+            original = getattr(queries, method)
+
+            def record(name, parameters=(), original=original):
+                used.add(name)
+                return original(name, parameters)
+
+            monkeypatch.setattr(f'{module}.{method}', record)
+    for url in ('/', '/materials/', '/materials/?q=Краска',
+                '/materials/1/', '/materials/available/',
+                '/materials/available/?date=2026-10-18',
+                '/operations/', '/operations/?state=active',
+                '/operations/?kind=expense', '/operations/1/', '/statistics/'):
+        assert Client().get(url).status_code == 200
+    assert used == set(queries.load_queries())
+
+
+@pytest.mark.parametrize('section', ['materials', 'operations'])
+def test_ids_outside_sqlite_integer_range_are_not_server_errors(section):
+    response = Client().get(f'/{section}/{2 ** 80}/')
+    assert response.status_code == 404
+
+
+def test_new_pages_support_empty_database(web_data, store_web_data):
+    web_data['operations'].clear()
+    web_data['materials'].clear()
+    store_web_data(web_data)
+    for url in ('/', '/statistics/', '/materials/available/'):
+        assert Client().get(url).status_code == 200

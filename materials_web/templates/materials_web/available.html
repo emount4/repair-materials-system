@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Подбор материалов — Учет материалов ИП{% endblock %}
+{% block content %}
+<header class="page-heading">
+    <div><p class="section-label mb-1">Текущие запасы</p><h1 class="h2 mb-0">Подбор материалов</h1></div>
+    <span class="badge text-bg-dark">Найдено: {{ materials|length }}</span>
+</header>
+<form method="get" class="filter-bar mb-4">
+    <div>
+        <label class="form-label" for="expense-date">Без расхода на дату</label>
+        <input class="form-control" id="expense-date" name="date" value="{{ selected_date }}" type="date">
+    </div>
+    <div>
+        <label class="form-label" for="required-quantity">Текущий остаток не менее</label>
+        <input class="form-control" id="required-quantity" name="quantity" value="{{ quantity }}" type="number" min="0" step="any">
+    </div>
+    <button class="btn btn-success" type="submit"><i class="bi bi-funnel me-2"></i>Подобрать</button>
+    <a class="btn btn-outline-secondary" href="{% url 'materials_web:available' %}">Сбросить</a>
+</form>
+{% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+{% include "materials_web/includes/material_table.html" %}
+{% endblock %}

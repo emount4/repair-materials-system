@@ -9,5 +9,6 @@ app_name = 'materials_web'
 
 urlpatterns = [
     path('', views.materials, name='materials'),
+    path('available/', views.available, name='available'),
     path('<int:material_id>/', views.material_detail, name='material_detail'),
 ]

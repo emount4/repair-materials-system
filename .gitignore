@@ -1,8 +1,13 @@
 .venv
 __pycache__/
 .pytest_cache/
+.pytest_work/
+.pytest_tmp/
 *.py[cod]
 data/*.tmp
 .vscode
 .mypy_cache
 db.sqlite3
+data/*.sqlite-journal
+data/*.sqlite-wal
+data/*.sqlite-shm
