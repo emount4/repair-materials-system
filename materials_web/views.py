@@ -2,6 +2,8 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.shortcuts import get_object_or_404
+from materials_web.models import Material
 
 from db.database import MAX_ID
 from db.orm_queries import fetch_all, fetch_one
@@ -67,3 +69,10 @@ def available(request) -> HttpResponse:
                'quantity': quantity, 'error': error}
     return render(request, 'materials_web/available.html', context,
                   status=400 if error else 200)
+
+
+def material_slug(request, slug):
+    material = get_object_or_404(Material, slug=slug)
+    return render(request, 'materials_web/material_detail.html', {
+        'material': material, 'total_cost': material.stock_value,
+    })

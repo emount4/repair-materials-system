@@ -8,3 +8,4 @@ class MaterialsWebConfig(AppConfig):
 
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'materials_web'
+    verbose_name = 'Склад'

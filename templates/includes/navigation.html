@@ -7,7 +7,7 @@
                 src="{% static 'homepage/img/logo.svg' %}"
                 alt=""
             >
-            Материалы ИП
+            {{ inventory_title }} · {{ inventory_material_count }}
         </a>
         <div class="navbar-nav flex-row flex-wrap gap-2 gap-md-3">
             <a class="nav-link" href="{% url 'homepage:index' %}">

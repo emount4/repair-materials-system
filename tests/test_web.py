@@ -435,3 +435,130 @@ def test_web_never_opens_legacy_sqlite(monkeypatch):
     monkeypatch.setattr(database, 'get_connection', reject)
     for url in ('/', '/materials/', '/operations/', '/statistics/'):
         assert Client().get(url).status_code == 200
+
+
+def test_status_queryset_and_completed_turnover():
+    from operations_web.models import Operation as Movement
+    from db.orm_queries import fetch_one, fetch_all
+
+    movement = Movement.objects.get(pk=1)
+    movement.status = Movement.Status.COMPLETED
+    movement.save()
+    assert Movement.objects.active().count() == 0
+    assert Movement.objects.completed().for_date('2026-10-18').count() == 1
+    assert Movement.objects.effective().count() == 1
+    assert fetch_one('operation_summary')['completed_count'] == 1
+    assert fetch_one('operation_summary')['expense_value'] == 200
+    assert not fetch_all('materials_without_expense', (0, '2026-10-18'))
+    response = Client().get('/operations/?state=completed')
+    assert 'завершена' in response.content.decode()
+
+
+def test_slug_generated_value_and_context():
+    from materials_web.models import Material as Stock
+
+    material = Stock.objects.get(pk=1)
+    material.price = 12.5
+    material.save()
+    material.refresh_from_db()
+    assert material.stock_value == 125
+    assert Client().get(material.get_absolute_url()).status_code == 200
+    assert Client().get('/materials/item/not-existing/').status_code == 404
+    assert 'Материалы ИП · 1' in Client().get('/').content.decode()
+
+
+@pytest.fixture
+def admin_client():
+    from django.contrib.auth import get_user_model
+
+    user, _ = get_user_model().objects.get_or_create(username='test-admin')
+    user.is_staff = True
+    user.is_superuser = True
+    user.save()
+    client = Client()
+    client.force_login(user)
+    return client
+
+
+def test_admin_registration_search_and_inline(admin_client):
+    for url in ('/admin/', '/admin/materials_web/material/',
+                '/admin/operations_web/operation/',
+                '/admin/materials_web/material/1/change/'):
+        assert admin_client.get(url).status_code == 200
+    response = admin_client.get('/admin/operations_web/operation/',
+                                {'q': 'Краска', 'status__exact': 'active'})
+    assert 'Краска' in response.content.decode()
+    assert Client().get('/admin/').status_code == 302
+    assert admin_client.get('/admin/operations_web/operation/1/delete/'
+                            ).status_code == 403
+
+
+def test_admin_creation_cancel_and_invalid_expense(admin_client):
+    from materials_web.models import Material as Stock
+    from operations_web.models import Operation as Movement
+
+    payload = {'material': 1, 'kind': 'expense', 'quantity': 3,
+               'date': '2026-11-08', 'note': 'Admin test', 'status': 'active'}
+    response = admin_client.post('/admin/operations_web/operation/add/',
+                                 payload)
+    assert response.status_code == 302
+    assert Stock.objects.get(pk=1).quantity == 7
+    created = Movement.objects.get(note='Admin test')
+    response = admin_client.post(
+        f'/admin/operations_web/operation/{created.pk}/change/',
+        {'status': 'cancelled', 'note': 'Cancelled in admin'},
+    )
+    assert response.status_code == 302
+    assert Stock.objects.get(pk=1).quantity == 10
+    payload['quantity'] = 999
+    response = admin_client.post('/admin/operations_web/operation/add/',
+                                 payload)
+    assert response.status_code == 200
+    assert 'Недостаточно материала' in response.content.decode()
+    assert Stock.objects.get(pk=1).quantity == 10
+
+
+def test_related_queries_have_constant_cost():
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+    from operations_web.models import Operation as Movement
+    from db.orm_queries import fetch_all
+
+    Movement.objects.bulk_create([
+        Movement(material_id=1, kind='expense', quantity=1, date='2026-11-08')
+        for _ in range(4)
+    ])
+    with CaptureQueriesContext(connection) as naive:
+        names = [item.material.name for item in Movement.objects.all()]
+    with CaptureQueriesContext(connection) as optimized:
+        rows = list(fetch_all('operations_list'))
+        assert all(item['material_name'] for item in rows)
+    assert len(naive) == len(names) + 1
+    assert len(optimized) == 1
+    with CaptureQueriesContext(connection) as details:
+        item = Movement.objects.select_related('material').get(pk=1)
+        assert item.material.name == 'Краска'
+    assert len(details) == 1
+
+
+def test_boolean_data_migration_retains_cancelled_records():
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+
+    executor = MigrationExecutor(connection)
+    latest = executor.loader.graph.leaf_nodes()
+    target = [('operations_web', '0002_alter_operation_quantity')]
+    try:
+        executor.migrate(target)
+        old = executor.loader.project_state(target).apps.get_model(
+            'operations_web', 'Operation')
+        old.objects.all().delete()
+        old.objects.create(material_id=1, kind='receipt', quantity=1,
+                           date='2026-11-08', cancelled=True)
+        old.objects.create(material_id=1, kind='receipt', quantity=1,
+                           date='2026-11-08', cancelled=False)
+    finally:
+        MigrationExecutor(connection).migrate(latest)
+    from operations_web.models import Operation as Movement
+    assert Movement.objects.cancelled().count() == 1
+    assert Movement.objects.active().count() == 1

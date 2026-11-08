@@ -3,7 +3,7 @@
     <td>
         <a
             class="fw-semibold link-dark"
-            href="{% url 'materials_web:material_detail' material.id %}"
+            href="{{ material.get_absolute_url }}"
         >
             {{ material.name|default:"Без названия" }}
         </a>

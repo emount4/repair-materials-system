@@ -11,6 +11,7 @@
     <article class="metric"><div class="text-secondary small">Стоимость запасов</div><div class="fs-5 fw-bold">{{ statistics.total_cost|floatformat:2 }} руб.</div></article>
 </section>
 <dl class="row mb-4">
+    <dt class="col-sm-5">Завершённых операций</dt><dd class="col-sm-7">{{ summary.completed_count }}</dd>
     <dt class="col-sm-5">Поступления по текущим ценам</dt><dd class="col-sm-7">{{ summary.receipt_value|floatformat:2 }} руб.</dd>
     <dt class="col-sm-5">Расходы по текущим ценам</dt><dd class="col-sm-7">{{ summary.expense_value|floatformat:2 }} руб.</dd>
 </dl>

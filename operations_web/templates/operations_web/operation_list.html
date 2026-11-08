@@ -32,6 +32,7 @@
         <label class="form-label" for="operation-state">Статус</label>
         <select class="form-select" id="operation-state" name="state">
             <option value="">Все статусы</option>
+            <option value="completed" {% if state == 'completed' %}selected{% endif %}>Завершённые</option>
             <option value="active" {% if state == 'active' %}selected{% endif %}>Действующие</option>
             <option value="cancelled" {% if state == 'cancelled' %}selected{% endif %}>Отменённые</option>
         </select>

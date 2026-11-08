@@ -8,3 +8,4 @@ class OperationsWebConfig(AppConfig):
 
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'operations_web'
+    verbose_name = 'Движение материалов'

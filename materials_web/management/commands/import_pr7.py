@@ -34,6 +34,8 @@ class Command(BaseCommand):
             row['note'] = row['note'] or ''
             row['cancelled'] = bool(row['cancelled'])
             LegacyOperation.from_data(row, legacy)
+            row['status'] = (Operation.Status.CANCELLED if row.pop('cancelled')
+                             else Operation.Status.ACTIVE)
         Operation.objects.all().delete()
         Material.objects.all().delete()
         Material.objects.bulk_create([Material(**row) for row in materials])

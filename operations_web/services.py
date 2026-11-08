@@ -37,6 +37,6 @@ def cancel_operation(operation_id):
     validate_number(balance)
     material.quantity = balance
     material.save(update_fields=['quantity'])
-    operation.cancelled = True
-    operation.save(update_fields=['cancelled'])
+    operation.status = Operation.Status.CANCELLED
+    operation.save(update_fields=['status'])
     return operation

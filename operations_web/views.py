@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from db.database import MAX_ID
 from db.orm_queries import fetch_all, fetch_one
 from homepage.parameters import date_parameter
+from operations_web.models import Operation
 
 
 def operations(request) -> HttpResponse:
@@ -19,7 +20,7 @@ def operations(request) -> HttpResponse:
     try:
         if kind not in ('', 'receipt', 'expense'):
             raise ValueError('Неизвестный вид операции.')
-        if state not in ('', 'active', 'cancelled'):
+        if state not in ('', *Operation.Status.values):
             raise ValueError('Неизвестный статус операции.')
         date_parameter(selected_date)
         if state == 'active' and not kind and not selected_date:
@@ -27,9 +28,8 @@ def operations(request) -> HttpResponse:
         elif not any((kind, selected_date, state)):
             rows = fetch_all('operations_list')
         else:
-            cancelled = {'': '', 'active': 0, 'cancelled': 1}[state]
             parameters = (kind, kind, selected_date, selected_date,
-                          cancelled, cancelled)
+                          state, state)
             rows = fetch_all('operations_filter', parameters)
     except ValueError as exception:
         error = str(exception)
