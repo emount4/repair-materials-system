@@ -2,9 +2,10 @@
 
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.core.paginator import Paginator
 
 from db.database import MAX_ID
-from db.queries import fetch_all, fetch_one
+from db.orm_queries import fetch_all, fetch_one
 from homepage.parameters import date_parameter
 
 
@@ -32,7 +33,22 @@ def operations(request) -> HttpResponse:
             rows = fetch_all('operations_filter', parameters)
     except ValueError as exception:
         error = str(exception)
-    context = {'operations': rows, 'kind': kind, 'state': state,
+    sort = request.GET.get('sort', 'newest')
+    orderings = {'newest': ('-date', '-id'), 'oldest': ('date', 'id'),
+                 'material': ('material__name', '-date', '-id')}
+    if sort not in orderings:
+        error = 'Неизвестный порядок сортировки.'
+        sort = 'newest'
+    search = request.GET.get('q', '').strip()
+    if not error:
+        if search:
+            from django.db.models import Q
+            rows = rows.filter(Q(material__name__icontains=search)
+                               | Q(note__icontains=search))
+        rows = rows.order_by(*orderings[sort])
+    page_obj = Paginator(rows, 10).get_page(request.GET.get('page'))
+    context = {'operations': page_obj, 'page_obj': page_obj,
+               'sort': sort, 'q': search, 'kind': kind, 'state': state,
                'selected_date': selected_date, 'error': error}
     return render(request, 'operations_web/operation_list.html', context,
                   status=400 if error else 200)

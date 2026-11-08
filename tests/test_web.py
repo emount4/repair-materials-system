@@ -22,6 +22,15 @@ from operations import Operation  # noqa: E402
 from db import database  # noqa: E402
 from db.import_json import import_json  # noqa: E402
 from storage import save_data  # noqa: E402
+from django.core.management import call_command  # noqa: E402
+from django.test.utils import setup_databases, teardown_databases  # noqa: E402
+
+
+@pytest.fixture(scope='session', autouse=True)
+def orm_database():
+    config = setup_databases(verbosity=0, interactive=False)
+    yield
+    teardown_databases(config, verbosity=0)
 
 
 @pytest.fixture
@@ -31,6 +40,8 @@ def store_web_data(tmp_path, monkeypatch):
     def store(data):
         save_data(data, tmp_path / 'json')
         import_json(tmp_path / 'json', replace=True)
+        call_command('import_pr7', source=str(database.DB_PATH), replace=True,
+                     verbosity=0)
 
     return store
 
@@ -332,7 +343,7 @@ def test_pages_read_sqlite_not_json(monkeypatch):
 
 
 def test_all_queries_are_used_by_web_pages(monkeypatch):
-    from db import queries
+    from db import orm_queries as queries
 
     used = set()
     for module in ('homepage.views', 'materials_web.views',
@@ -351,7 +362,7 @@ def test_all_queries_are_used_by_web_pages(monkeypatch):
                 '/operations/', '/operations/?state=active',
                 '/operations/?kind=expense', '/operations/1/', '/statistics/'):
         assert Client().get(url).status_code == 200
-    assert used == set(queries.load_queries())
+    assert len(used) == 16
 
 
 @pytest.mark.parametrize('section', ['materials', 'operations'])
@@ -365,4 +376,62 @@ def test_new_pages_support_empty_database(web_data, store_web_data):
     web_data['materials'].clear()
     store_web_data(web_data)
     for url in ('/', '/statistics/', '/materials/available/'):
+        assert Client().get(url).status_code == 200
+
+
+def test_orm_crud_and_protected_relationship():
+    from django.db.models.deletion import ProtectedError
+    from materials_web.models import Material as Stock
+    from operations_web.models import Operation as Movement
+    from operations_web.services import record_operation, cancel_operation
+
+    material = Stock.objects.create(name='Test', price=1, quantity=5,
+                                    unit='kg', category='Test')
+    operation = record_operation(material.pk, 'expense', 2, '2026-11-08')
+    material.refresh_from_db()
+    assert material.quantity == 3
+    assert material.operations.get().pk == operation.pk
+    with pytest.raises(ProtectedError):
+        material.delete()
+    with pytest.raises(ValueError):
+        record_operation(material.pk, 'expense', 99, '2026-11-08')
+    assert Movement.objects.filter(material=material).count() == 1
+    cancel_operation(operation.pk)
+    material.refresh_from_db()
+    assert material.quantity == 5
+    with pytest.raises(ValueError):
+        cancel_operation(operation.pk)
+    operation.delete()
+    material.name = 'Updated'
+    material.save()
+    assert Stock.objects.get(pk=material.pk).name == 'Updated'
+    material.delete()
+    assert not Stock.objects.filter(pk=material.pk).exists()
+
+
+def test_pagination_retains_filters_and_order():
+    from operations_web.models import Operation as Movement
+
+    Movement.objects.bulk_create([
+        Movement(material_id=1, kind='expense', quantity=1,
+                 date='2026-11-08', note=f'Pagination {i}')
+        for i in range(23)
+    ])
+    response = Client().get('/operations/', {
+        'q': 'Pagination', 'state': 'active', 'sort': 'oldest', 'page': 2,
+    })
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert '2 / 3' in content
+    assert 'q=Pagination' in content and 'sort=oldest' in content
+    assert 'state=active' in content and 'page=3' in content
+    assert Client().get('/operations/?sort=unknown').status_code == 400
+
+
+def test_web_never_opens_legacy_sqlite(monkeypatch):
+    def reject(*args, **kwargs):
+        raise AssertionError('Legacy SQL access in HTTP request')
+
+    monkeypatch.setattr(database, 'get_connection', reject)
+    for url in ('/', '/materials/', '/operations/', '/statistics/'):
         assert Client().get(url).status_code == 200

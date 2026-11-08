@@ -3,7 +3,7 @@
 from django.http import HttpResponse
 from django.shortcuts import render
 
-from db.queries import fetch_all, fetch_one
+from db.orm_queries import fetch_all, fetch_one
 
 
 def page_not_found(request, exception) -> HttpResponse:
@@ -39,6 +39,8 @@ def statistics(request) -> HttpResponse:
         'frequent': fetch_all('frequent_materials', (minimum,)),
         'threshold': threshold,
         'error': error,
+        'latest': fetch_all('latest_operations'),
+        'unused': fetch_all('materials_without_operations'),
     }
     return render(request, 'homepage/statistics.html', context,
                   status=400 if error else 200)

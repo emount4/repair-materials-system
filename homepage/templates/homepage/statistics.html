@@ -67,4 +67,6 @@
         </table>
     </div>
 </section>
+<section class="mt-4"><h2 class="h4">Последние операции</h2><ul>{% for item in latest %}<li><a href="{% url 'operations_web:operation_detail' item.id %}">{{ item }}</a></li>{% empty %}<li>Операций пока нет.</li>{% endfor %}</ul></section>
+<section class="mt-4"><h2 class="h4">Материалы без операций</h2><ul>{% for item in unused %}<li><a href="{% url 'materials_web:material_detail' item.id %}">{{ item.name }}</a></li>{% empty %}<li>Нет материалов без операций.</li>{% endfor %}</ul></section>
 {% endblock %}

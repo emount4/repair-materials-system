@@ -1,5 +1,97 @@
 # Система учета материалов ИП
 
+## Актуальный этап: ПР9
+
+Ветка `pr9-django-orm` продолжает ПР7. Веб-приложение теперь работает
+через Django ORM, а не через прямые SQL-запросы. Описание ПР7 ниже
+сохранено для сравнения предыдущей реализации и не является инструкцией
+к текущему источнику веб-данных.
+
+### Установка и запуск ПР9
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py import_pr7
+.\.venv\Scripts\python.exe manage.py runserver
+```
+
+Если ORM-база уже заполнена, повторять импорт не нужно. Осознанная замена
+данных доступна командой `manage.py import_pr7 --replace`.
+После запуска: http://127.0.0.1:8000/.
+
+### Модели и стратегия переноса
+
+`materials_web/models.py`: Material (name, price, quantity, unit, category).
+`operations_web/models.py`: Operation (material, kind, quantity, date, note,
+cancelled). Django создаёт первичные ключи автоматически. ForeignKey material
+использует PROTECT и related_name='operations': материал с историей удалить
+нельзя, а история доступна через material.operations.all(). Дата имеет тип
+DateField, отмена BooleanField, необязательное примечание TextField с blank/null.
+CheckConstraint и валидаторы проверяют допустимые количества и виды операций.
+
+Выбрана стратегия новой управляемой базы: исходный `data/materials.sqlite`
+остаётся неизменным источником ПР7. Миграции создают таблицы в локальном
+`db.sqlite3`, который исключён из Git. Команда import_pr7 читает старую базу
+в режиме read-only, проверяет данные, переносит материалы перед операциями
+и сохраняет исходные ID и ForeignKey. Перенос выполняется атомарно;
+повторный запуск без --replace не удаляет существующие данные.
+Прямой sqlite3 допустим только в этой команде переноса и архивном слое ПР7.
+
+### ORM и пользовательские сценарии
+
+Все прежние адреса сохранены. `db/orm_queries.py` реализует 16 отдельных
+запросов: списки и карточки, поиск материалов по имени/остатку, фильтры
+операций, подбор без действующего расхода на дату, сводки, категории,
+активность, последние операции и материалы без истории. Используются
+all/filter/exclude/get, values/values_list, select_related, aggregate,
+annotate, Count/Sum/Min/Max/Avg, условные Q и срез [:5]. Поиск журнала
+дополнительно использует Q по имени связанного материала или примечанию.
+Минимум ПР9: 15 различных ORM-выражений; минимум по категориям соблюдён.
+
+Журнал `/operations/` поддерживает q, kind, state, date, sort и page.
+sort принимает только newest, oldest, material: сортировка по дате, по дате
+и ID либо по имени связанного материала. Paginator выдаёт 10 записей;
+querystring в шаблоне сохраняет фильтры и сортировку в ссылках перехода.
+Некорректный номер страницы обрабатывается get_page(), неизвестный sort
+возвращает 400. Отсутствующий объект получает 404.
+
+`operations_web/services.py` предоставляет атомарные record_operation() и
+cancel_operation(): отрицательный остаток, повторная отмена и отмена уже
+израсходованного поступления запрещены. CRUD демонстрируется через shell
+и тесты, новые публичные формы редактирования не вводились.
+
+```python
+from materials_web.models import Material
+from operations_web.services import record_operation, cancel_operation
+m = Material.objects.create(name='Тест', price=10, quantity=5,
+                            unit='шт', category='Тест')
+op = record_operation(m.pk, 'expense', 2, '2026-11-08')
+cancel_operation(op.pk)
+op.delete()
+m.name = 'Обновлено'
+m.save()
+m.delete()
+```
+
+### Проверка и выгрузка
+
+```powershell
+.\.venv\Scripts\python.exe manage.py check
+.\.venv\Scripts\python.exe manage.py showmigrations
+.\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m flake8 --jobs=1
+.\.venv\Scripts\python.exe manage.py dumpdata materials_web operations_web --output data/orm-export.json
+```
+
+Восстановление в подготовленную пустую базу: `manage.py loaddata data/orm-export.json`.
+Экспорт является локальным файлом, не включается в Git. JSON-консоль из ранних
+практик сохранена, автоматической синхронизации трёх хранилищ нет.
+Тесты используют отдельную тестовую ORM-базу и не меняют рабочие данные.
+
+## Архивное описание ПР7
+
 Приложение для индивидуального предпринимателя, который учитывает материалы
 для ремонтных работ. Объектная модель и консольный интерфейс из ПР3 дополнены
 веб-интерфейсом на Django Templates (ПР6) и SQLite-хранилищем (ПР7).

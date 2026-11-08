@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from db.database import MAX_ID
-from db.queries import fetch_all, fetch_one
+from db.orm_queries import fetch_all, fetch_one
 from homepage.parameters import date_parameter, quantity_parameter
 
 
@@ -17,10 +17,8 @@ def materials(request) -> HttpResponse:
     try:
         minimum = quantity_parameter(quantity)
         if name or quantity:
-            escaped = name.replace('\\', '\\\\').replace('%', '\\%')
-            escaped = escaped.replace('_', '\\_')
             rows = fetch_all('materials_search',
-                             ('%' + escaped + '%', minimum))
+                             (name, minimum))
         else:
             rows = fetch_all('materials_list')
     except ValueError as exception:
@@ -44,7 +42,7 @@ def material_detail(request, material_id: int) -> HttpResponse:
 
     context = {
         'material': material,
-        'total_cost': material['total_cost'],
+        'total_cost': material.total_cost,
     }
     return render(request, 'materials_web/material_detail.html', context)
 
