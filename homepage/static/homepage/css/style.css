@@ -7,6 +7,13 @@
     --line: #dfe3e7;
 }
 
+.editor-form { max-width: 640px; }
+.editor-form label { display: block; margin-bottom: 0.4rem; }
+.editor-form input, .editor-form select, .editor-form textarea {
+    max-width: 100%;
+}
+.errorlist { color: #b42318; padding-left: 1.25rem; }
+
 body {
     min-height: 100vh;
     display: flex;

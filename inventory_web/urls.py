@@ -8,6 +8,7 @@ handler404 = 'homepage.views.page_not_found'
 
 
 urlpatterns = [
+    path('accounts/', include('django.contrib.auth.urls')),
     path('admin/', admin.site.urls),
     path('', include('homepage.urls')),
     path('materials/', include('materials_web.urls')),

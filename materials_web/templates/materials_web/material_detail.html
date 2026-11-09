@@ -3,6 +3,14 @@
 {% block title %}{{ material.name }} — Учет материалов ИП{% endblock %}
 
 {% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+{% if perms.materials_web.change_material %}<a class="btn btn-outline-dark" href="{% url 'materials_web:edit' material.id %}">Изменить</a>{% endif %}
+{% if perms.materials_web.delete_material %}<a class="btn btn-outline-danger" href="{% url 'materials_web:delete' material.id %}"><i class="bi bi-trash me-2"></i>Удалить</a>{% endif %}
+{% if perms.operations_web.add_operation %}
+<a class="btn btn-success" href="{% url 'operations_web:create' %}?material={{ material.id }}&amp;kind=receipt"><i class="bi bi-plus-lg me-2"></i>Поступление</a>
+<a class="btn btn-outline-dark" href="{% url 'operations_web:create' %}?material={{ material.id }}&amp;kind=expense"><i class="bi bi-dash-lg me-2"></i>Расход</a>
+{% endif %}
+</div>
 <p class="section-label mb-1">Карточка материала</p>
 <h1 class="h2 mb-3">{{ material.name|default:"Без названия" }}</h1>
 
