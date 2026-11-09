@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1 class="h3">{{ title }}</h1><p>{{ object }}</p>
+{% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+<form method="post" class="d-flex gap-2">{% csrf_token %}
+    {% if not error %}<button class="btn btn-danger" type="submit">Подтвердить</button>{% endif %}
+    <a class="btn btn-outline-secondary" href="{% url back_url %}">Назад</a>
+</form>
+{% endblock %}

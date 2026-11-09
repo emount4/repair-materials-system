@@ -19,6 +19,7 @@
 <body>
     {% include "includes/navigation.html" %}
     <main class="container page-shell py-4 py-md-5">
+        {% for message in messages %}<p class="alert alert-info" role="status">{{ message }}</p>{% endfor %}
         {% block content %}{% endblock %}
     </main>
     <footer class="site-footer">

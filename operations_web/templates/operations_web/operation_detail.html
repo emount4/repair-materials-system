@@ -6,6 +6,12 @@
 {% endblock %}
 
 {% block content %}
+{% if perms.operations_web.change_operation %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+<a class="btn btn-outline-dark" href="{% url 'operations_web:edit' operation.id %}">Изменить примечание</a>
+{% if not operation.cancelled %}<a class="btn btn-outline-danger" href="{% url 'operations_web:cancel' operation.id %}">Отменить операцию</a>{% endif %}
+</div>
+{% endif %}
 <p class="section-label mb-1">Карточка операции</p>
 <h1 class="h2 mb-3">
     {% if operation.kind == "receipt" %}Поступление{% else %}Расход{% endif %}

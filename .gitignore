@@ -8,6 +8,10 @@ data/*.tmp
 .vscode
 .mypy_cache
 db.sqlite3
+db_pr9.sqlite3
+db_pr9.sqlite3-journal
+db_pr9.sqlite3-wal
+db_pr9.sqlite3-shm
 data/orm-export.json
 data/*.sqlite-journal
 data/*.sqlite-wal

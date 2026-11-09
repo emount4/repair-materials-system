@@ -73,3 +73,5 @@ INTERNAL_IPS = ['127.0.0.1', '::1']
 if DEBUG and 'pytest' not in sys.modules:
     INSTALLED_APPS += ['debug_toolbar']
     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+LOGIN_REDIRECT_URL = 'homepage:index'
+LOGOUT_REDIRECT_URL = 'homepage:index'

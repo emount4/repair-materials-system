@@ -3,6 +3,7 @@
 {% block title %}Материалы — Учет материалов ИП{% endblock %}
 
 {% block content %}
+{% if perms.materials_web.add_material %}<a class="btn btn-success mb-3" href="{% url 'materials_web:create' %}"><i class="bi bi-plus-lg me-2"></i>Добавить материал</a>{% endif %}
 <header class="page-heading">
     <div>
         <p class="section-label mb-1">Склад</p>

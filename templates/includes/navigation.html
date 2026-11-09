@@ -28,3 +28,9 @@
         </div>
     </div>
 </nav>
+<div class="container page-shell d-flex justify-content-end py-2">
+    {% if user.is_authenticated %}
+        <span class="me-3">{{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary" type="submit">Выйти</button></form>
+    {% else %}<a href="{% url 'login' %}">Войти</a>{% endif %}
+</div>
